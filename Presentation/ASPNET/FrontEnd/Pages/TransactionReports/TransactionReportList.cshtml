@@ -1,0 +1,24 @@
+@page
+@{
+    ViewData["Title"] = "Transaction Report List";
+}
+
+<div id="app" v-cloak>
+    <div class="card">
+        <div class="card-header">
+            <h3 class="card-title">Transaction Reports</h3>
+            <div class="card-options d-flex gap-2">
+                <button type="button" class="btn btn-outline-secondary btn-sm" v-on:click="handler.exportExcel" title="Export to Excel">
+                    <i class="ti ti-file-spreadsheet"></i>
+                </button>
+            </div>
+        </div>
+        <div class="table-responsive px-3 pt-2 pb-3">
+            <table id="mainGrid" class="table table-vcenter table-hover card-table"></table>
+        </div>
+    </div>
+</div>
+
+@section scripts {
+    <script src="~/FrontEnd/Pages/TransactionReports/TransactionReportList.cshtml.js"></script>
+}

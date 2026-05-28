@@ -1,0 +1,86 @@
+@page
+@{
+    ViewData["Title"] = "Todo List";
+}
+
+<div id="app" v-cloak>
+    <div class="card">
+        <div class="card-header">
+            <h3 class="card-title">Todos</h3>
+            <div class="card-options d-flex gap-2">
+                <button type="button" class="btn btn-primary btn-sm" v-on:click="handler.openAdd" title="Add">
+                    <i class="ti ti-plus me-1"></i>Add
+                </button>
+                <button type="button" class="btn btn-secondary btn-sm" v-bind:disabled="!state.hasSelection" v-on:click="handler.openEdit" title="Edit">
+                    <i class="ti ti-pencil me-1"></i>Edit
+                </button>
+                <button type="button" class="btn btn-danger btn-sm" v-bind:disabled="!state.hasSelection" v-on:click="handler.openDelete" title="Delete">
+                    <i class="ti ti-trash me-1"></i>Delete
+                </button>
+                <button type="button" class="btn btn-outline-secondary btn-sm" v-on:click="handler.exportExcel" title="Export to Excel">
+                    <i class="ti ti-file-spreadsheet"></i>
+                </button>
+            </div>
+        </div>
+        <div class="table-responsive px-3 pt-2 pb-3">
+            <table id="mainGrid" class="table table-vcenter table-hover card-table"></table>
+        </div>
+    </div>
+
+    <div class="modal fade" ref="mainModalRef" id="MainModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">{{ state.mainTitle }}</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="MainForm">
+                        <div class="row">
+                            <div class="col-md-12">
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h5>Main Info</h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="row mb-2">
+                                            <div class="col-md-6">
+                                                <label for="Name">Name</label>
+                                                <input ref="nameRef" v-model="state.name">
+                                                <label class="text-danger">{{ state.errors.name }}</label>
+                                            </div>
+                                        </div>
+                                        <div class="row mb-2">
+                                            <div class="col-12">
+                                                <label for="Description">Description</label>
+                                                <textarea v-model="state.description" id="Description" name="Description" class="form-control" rows="3"></textarea>
+                                                <label class="text-danger">{{ state.errors.description }}</label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button"
+                            id="MainSaveButton"
+                            class="btn"
+                            v-bind:class="state.deleteMode ? 'btn-danger' : 'btn-primary'"
+                            v-on:click="handler.handleSubmit"
+                            v-bind:disabled="state.isSubmitting">
+                        <span class="spinner-border spinner-border-sm me-2" v-if="state.isSubmitting" role="status" aria-hidden="true"></span>
+                        <span v-if="!state.isSubmitting">{{ state.deleteMode ? 'Delete' : 'Save' }}</span>
+                        <span v-else>{{ state.deleteMode ? 'Deleting...' : 'Saving...' }}</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section scripts {
+    <script src="~/FrontEnd/Pages/Todos/TodoList.cshtml.js"></script>
+}

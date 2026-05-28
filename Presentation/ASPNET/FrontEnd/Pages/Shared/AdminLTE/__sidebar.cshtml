@@ -1,0 +1,110 @@
+@{
+    var avatarUrl = "/noimage.png";
+    var appName = "WMS";
+}
+
+<aside class="navbar navbar-vertical navbar-expand-lg" data-bs-theme="dark">
+    <div class="container-fluid">
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#sidebar-menu" aria-controls="sidebar-menu" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+
+        <h1 class="navbar-brand navbar-brand-autodark">
+            <a asp-area="" asp-page="/Dashboards/DefaultDashboard">@appName</a>
+        </h1>
+
+        <div class="collapse navbar-collapse" id="sidebar-menu">
+            <div class="d-flex align-items-center px-3 py-2 mb-1 border-bottom border-secondary-subtle">
+                <img id="AvatarImageSide" src="@avatarUrl" class="avatar avatar-sm rounded-circle me-2" alt="Avatar">
+                <div class="flex-fill overflow-hidden">
+                    <a asp-area="" asp-page="/Profiles/MyProfile" class="text-white text-decoration-none text-truncate d-block small" id="userEmail">Loading...</a>
+                </div>
+            </div>
+
+            <div id="navbarnav" class="pt-1">
+                <div id="mainMenuContainer">
+                    <div id="mainMenu"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</aside>
+
+@* __sidebar.cshtml *@
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        try {
+            const email = StorageManager.getEmail();
+            const userEmail = `${email}`;
+            document.getElementById('userEmail').textContent = userEmail;
+
+            const currentUrl = window.location.pathname;
+            const firstSegment = currentUrl.split('/')[1];
+
+            function filterMenu(menuData, userRoles) {
+                const childMenus = menuData.filter(menu => {
+                    if (menu.navURL) {
+                        const firstSegment = menu.navURL.split('/')[1];
+                        return userRoles.some(role => role.toLowerCase() === firstSegment.toLowerCase());
+                    }
+                    return false;
+                });
+
+                const validChildIds = new Set(childMenus.map(menu => menu.id));
+                const parentIds = new Set(childMenus.map(menu => menu.pid));
+                return menuData.filter(menu => validChildIds.has(menu.id) || parentIds.has(menu.id));
+            }
+
+            function updateMenuSelection(menuData, segment) {
+                const parentMap = {};
+                menuData.forEach(item => {
+                    parentMap[item.id] = item;
+                });
+
+                menuData.forEach(item => {
+                    item.isSelected = false;
+                    item.expanded = false;
+                    if (item.navURL && item.navURL.includes(`/${segment}`)) {
+                        item.isSelected = true;
+                        let parentId = item.pid;
+                        while (parentId) {
+                            const parent = parentMap[parentId];
+                            if (parent) {
+                                parent.expanded = true;
+                                parentId = parent.pid;
+                            } else {
+                                break;
+                            }
+                        }
+                    }
+                });
+
+                return menuData;
+            }
+
+            const userRoles = StorageManager.getUserRoles();
+            let menuData = StorageManager.getMenuNavigation();
+            const filteredMenu = filterMenu(menuData, userRoles);
+            menuData = updateMenuSelection(filteredMenu, firstSegment);
+
+            const mainMenu = new ej.navigations.TreeView({
+                fullRowNavigable: true,
+                fields: {
+                    dataSource: menuData,
+                    id: 'id',
+                    text: 'name',
+                    selected: 'isSelected',
+                    parentID: 'pid',
+                    hasChildren: 'hasChild',
+                    expanded: 'expanded',
+                    navigateUrl: 'navURL',
+                },
+                enablePersistence: false,
+            });
+            mainMenu.appendTo('#mainMenu');
+
+        } catch (error) {
+            console.error('Error fetching data from StorageManager:', error);
+        }
+    });
+</script>

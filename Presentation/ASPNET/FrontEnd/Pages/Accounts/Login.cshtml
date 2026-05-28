@@ -1,0 +1,71 @@
+@page
+@{
+    ViewData["Title"] = "Login";
+}
+
+<div id="app" v-cloak>
+    <div class="card-body">
+        <h2 class="h2 text-center mb-4">Sign in to your account</h2>
+        <form v-on:submit.prevent="handleSubmit" autocomplete="off">
+            <div class="mb-3">
+                <label class="form-label" for="Email">Email address</label>
+                <input id="Email"
+                       name="Email"
+                       type="email"
+                       class="form-control"
+                       placeholder="name@example.com"
+                       v-model="state.email"
+                       v-on:input="state.errors.email = ''"
+                       autocomplete="email" />
+                <div v-if="state.errors.email" class="text-danger small mt-1">{{ state.errors.email }}</div>
+            </div>
+            <div class="mb-2">
+                <label class="form-label" for="Password">
+                    Password
+                    <span class="form-label-description">
+                        <a asp-page="/Accounts/ForgotPassword">Forgot password?</a>
+                    </span>
+                </label>
+                <input id="Password"
+                       name="Password"
+                       type="password"
+                       class="form-control"
+                       placeholder="Password"
+                       v-model="state.password"
+                       v-on:input="state.errors.password = ''"
+                       autocomplete="current-password" />
+                <div v-if="state.errors.password" class="text-danger small mt-1">{{ state.errors.password }}</div>
+            </div>
+            <div class="mb-2">
+                <label class="form-check">
+                    <input type="checkbox" class="form-check-input" />
+                    <span class="form-check-label">Remember me on this device</span>
+                </label>
+            </div>
+            <div class="form-footer">
+                <button type="submit"
+                        class="btn btn-primary w-100"
+                        v-bind:disabled="state.isSubmitting">
+                    <span class="spinner-border spinner-border-sm me-2"
+                          v-if="state.isSubmitting"
+                          role="status"
+                          aria-hidden="true"></span>
+                    <span>{{ state.isSubmitting ? 'Signing in...' : 'Sign in' }}</span>
+                </button>
+            </div>
+        </form>
+    </div>
+    <div class="hr-text">or</div>
+    <div class="card-body">
+        <div class="text-center">
+            <a asp-page="/Accounts/Register" class="btn w-100">
+                <i class="ti ti-user-plus me-2"></i>
+                Create a new account
+            </a>
+        </div>
+    </div>
+</div>
+
+@section scripts {
+    <script type="module" src="~/FrontEnd/Pages/Accounts/Login.cshtml.js"></script>
+}

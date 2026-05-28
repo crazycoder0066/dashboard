@@ -1,0 +1,181 @@
+const App = {
+    setup() {
+        const state = Vue.reactive({
+            mainData: [],
+            deleteMode: false,
+            hasSelection: false,
+            positiveAdjustmentStatusListLookupData: [],
+            secondaryData: [],
+            productListLookupData: [],
+            warehouseListLookupData: [],
+            mainTitle: null,
+            id: '',
+            number: '',
+            adjustmentDate: '',
+            description: '',
+            status: null,
+            errors: { adjustmentDate: '', status: '', description: '', itemWarehouseId: '', itemProductId: '', itemMovement: '' },
+            showComplexDiv: false,
+            isSubmitting: false,
+            totalMovementFormatted: '0.00',
+            hasItemSelection: false,
+            itemDeleteMode: false,
+            isItemSubmitting: false,
+            itemTitle: '',
+            itemId: '',
+            itemWarehouseId: null,
+            itemProductId: null,
+            itemMovement: 0,
+        });
+
+        const mainModalRef = Vue.ref(null);
+        const itemModalRef = Vue.ref(null);
+        const adjustmentDateRef = Vue.ref(null);
+        const statusRef = Vue.ref(null);
+        const numberRef = Vue.ref(null);
+        const itemWarehouseIdRef = Vue.ref(null);
+        const itemProductIdRef = Vue.ref(null);
+
+        const showModal = () => { bootstrap.Modal.getOrCreateInstance(document.getElementById('MainModal'), { backdrop: 'static', keyboard: false }).show(); };
+        const hideModal = () => { bootstrap.Modal.getInstance(document.getElementById('MainModal'))?.hide(); };
+        const showItemModal = () => { bootstrap.Modal.getOrCreateInstance(document.getElementById('PositiveAdjustmentItemModal'), { backdrop: 'static', keyboard: false }).show(); };
+        const hideItemModal = () => { bootstrap.Modal.getInstance(document.getElementById('PositiveAdjustmentItemModal'))?.hide(); };
+
+        const validateForm = () => { state.errors.adjustmentDate = ''; state.errors.status = ''; let isValid = true; if (!state.adjustmentDate) { state.errors.adjustmentDate = 'Adjustment date is required.'; isValid = false; } if (!state.status) { state.errors.status = 'Status is required.'; isValid = false; } return isValid; };
+        const resetFormState = () => { state.id = ''; state.number = ''; state.adjustmentDate = ''; state.description = ''; state.status = null; state.errors = { adjustmentDate: '', status: '', description: '', itemWarehouseId: '', itemProductId: '', itemMovement: '' }; state.secondaryData = []; };
+        const resetItemFormState = () => { state.itemId = ''; state.itemWarehouseId = null; state.itemProductId = null; state.itemMovement = 0; state.errors.itemWarehouseId = ''; state.errors.itemProductId = ''; state.errors.itemMovement = ''; };
+
+        const adjustmentDatePicker = { obj: null, create: () => { adjustmentDatePicker.obj = new ej.calendars.DatePicker({ placeholder: 'Select Date', format: 'yyyy-MM-dd', value: state.adjustmentDate ? new Date(state.adjustmentDate) : null, change: (e) => { state.adjustmentDate = e.value; } }); adjustmentDatePicker.obj.appendTo(adjustmentDateRef.value); }, refresh: () => { if (adjustmentDatePicker.obj) adjustmentDatePicker.obj.value = state.adjustmentDate ? new Date(state.adjustmentDate) : null; } };
+        Vue.watch(() => state.adjustmentDate, () => { adjustmentDatePicker.refresh(); state.errors.adjustmentDate = ''; });
+
+        const numberText = { obj: null, create: () => { numberText.obj = new ej.inputs.TextBox({ placeholder: '[auto]' }); numberText.obj.appendTo(numberRef.value); } };
+
+        const positiveAdjustmentStatusListLookup = { obj: null, create: () => { if (state.positiveAdjustmentStatusListLookupData && Array.isArray(state.positiveAdjustmentStatusListLookupData)) { positiveAdjustmentStatusListLookup.obj = new ej.dropdowns.DropDownList({ dataSource: state.positiveAdjustmentStatusListLookupData, fields: { value: 'id', text: 'name' }, placeholder: 'Select Status', change: (e) => { state.status = e.value; } }); positiveAdjustmentStatusListLookup.obj.appendTo(statusRef.value); } }, refresh: () => { if (positiveAdjustmentStatusListLookup.obj) positiveAdjustmentStatusListLookup.obj.value = state.status; } };
+        Vue.watch(() => state.status, () => { positiveAdjustmentStatusListLookup.refresh(); state.errors.status = ''; });
+
+        const itemWarehouseListLookup = { obj: null, create: () => { if (state.warehouseListLookupData && Array.isArray(state.warehouseListLookupData)) { itemWarehouseListLookup.obj = new ej.dropdowns.DropDownList({ dataSource: state.warehouseListLookupData, fields: { value: 'id', text: 'name' }, placeholder: 'Select a Warehouse', allowFiltering: true, filtering: (e) => { e.preventDefaultAction = true; let q = new ej.data.Query(); if (e.text !== '') q = q.where('name', 'startsWith', e.text, true); e.updateData(state.warehouseListLookupData, q); }, change: (e) => { state.itemWarehouseId = e.value; } }); itemWarehouseListLookup.obj.appendTo(itemWarehouseIdRef.value); } }, refresh: () => { if (itemWarehouseListLookup.obj) itemWarehouseListLookup.obj.value = state.itemWarehouseId; } };
+        Vue.watch(() => state.itemWarehouseId, () => { state.errors.itemWarehouseId = ''; itemWarehouseListLookup.refresh(); });
+
+        const itemProductListLookup = { obj: null, create: () => { if (state.productListLookupData && Array.isArray(state.productListLookupData)) { itemProductListLookup.obj = new ej.dropdowns.DropDownList({ dataSource: state.productListLookupData, fields: { value: 'id', text: 'numberName' }, placeholder: 'Select a Product', allowFiltering: true, filtering: (e) => { e.preventDefaultAction = true; let q = new ej.data.Query(); if (e.text !== '') q = q.where('numberName', 'startsWith', e.text, true); e.updateData(state.productListLookupData, q); }, change: (e) => { state.itemProductId = e.value; if (!state.itemMovement) state.itemMovement = 1; } }); itemProductListLookup.obj.appendTo(itemProductIdRef.value); } }, refresh: () => { if (itemProductListLookup.obj) itemProductListLookup.obj.value = state.itemProductId; } };
+        Vue.watch(() => state.itemProductId, () => { state.errors.itemProductId = ''; itemProductListLookup.refresh(); });
+
+        const services = {
+            getMainData: async () => AxiosManager.get('/PositiveAdjustment/GetPositiveAdjustmentList', {}),
+            createMainData: async (adjustmentDate, description, status, createdById) => AxiosManager.post('/PositiveAdjustment/CreatePositiveAdjustment', { adjustmentDate, description, status, createdById }),
+            updateMainData: async (id, adjustmentDate, description, status, updatedById) => AxiosManager.post('/PositiveAdjustment/UpdatePositiveAdjustment', { id, adjustmentDate, description, status, updatedById }),
+            deleteMainData: async (id, deletedById) => AxiosManager.post('/PositiveAdjustment/DeletePositiveAdjustment', { id, deletedById }),
+            getPositiveAdjustmentStatusListLookupData: async () => AxiosManager.get('/PositiveAdjustment/GetPositiveAdjustmentStatusList', {}),
+            getSecondaryData: async (moduleId) => AxiosManager.get('/InventoryTransaction/PositiveAdjustmentGetInvenTransList?moduleId=' + moduleId, {}),
+            createSecondaryData: async (moduleId, warehouseId, productId, movement, createdById) => AxiosManager.post('/InventoryTransaction/PositiveAdjustmentCreateInvenTrans', { moduleId, warehouseId, productId, movement, createdById }),
+            updateSecondaryData: async (id, warehouseId, productId, movement, updatedById) => AxiosManager.post('/InventoryTransaction/PositiveAdjustmentUpdateInvenTrans', { id, warehouseId, productId, movement, updatedById }),
+            deleteSecondaryData: async (id, deletedById) => AxiosManager.post('/InventoryTransaction/PositiveAdjustmentDeleteInvenTrans', { id, deletedById }),
+            getProductListLookupData: async () => AxiosManager.get('/Product/GetProductList', {}),
+            getWarehouseListLookupData: async () => AxiosManager.get('/Warehouse/GetWarehouseList', {}),
+        };
+
+        const methods = {
+            populateMainData: async () => { const r = await services.getMainData(); state.mainData = r?.data?.content?.data.map(item => ({ ...item, adjustmentDate: new Date(item.adjustmentDate), createdAtUtc: new Date(item.createdAtUtc) })); },
+            populatePositiveAdjustmentStatusListLookupData: async () => { const r = await services.getPositiveAdjustmentStatusListLookupData(); state.positiveAdjustmentStatusListLookupData = r?.data?.content?.data; },
+            populateProductListLookupData: async () => { const r = await services.getProductListLookupData(); state.productListLookupData = r?.data?.content?.data.filter(p => p.physical === true).map(p => ({ ...p, numberName: `${p.number} - ${p.name}` })) || []; },
+            populateWarehouseListLookupData: async () => { const r = await services.getWarehouseListLookupData(); state.warehouseListLookupData = r?.data?.content?.data.filter(w => w.systemWarehouse === false) || []; },
+            populateSecondaryData: async (id) => { try { const r = await services.getSecondaryData(id); state.secondaryData = r?.data?.content?.data.map(item => ({ ...item, createdAtUtc: new Date(item.createdAtUtc) })); methods.refreshSummary(); } catch { state.secondaryData = []; } },
+            refreshSummary: () => { state.totalMovementFormatted = NumberFormatManager.formatToLocale(state.secondaryData.reduce((s, r) => s + (r.movement ?? 0), 0)); },
+            onMainModalHidden: () => { state.errors.adjustmentDate = ''; state.errors.status = ''; },
+        };
+
+        const mainModal = { obj: null, create: () => { mainModal.obj = new bootstrap.Modal(mainModalRef.value, { backdrop: 'static', keyboard: false }); } };
+
+        const handler = {
+            openAdd: () => { state.deleteMode = false; state.mainTitle = 'Add Positive Adjustment'; resetFormState(); state.showComplexDiv = false; showModal(); },
+            openEdit: async () => { const row = mainGrid.obj?.rows({ selected: true }).data()[0]; if (!row) return; state.deleteMode = false; state.mainTitle = 'Edit Positive Adjustment'; state.id = row.id ?? ''; state.number = row.number ?? ''; state.adjustmentDate = row.adjustmentDate ? new Date(row.adjustmentDate) : null; state.description = row.description ?? ''; state.status = String(row.status ?? ''); await methods.populateSecondaryData(row.id); secondaryGrid.refresh(); state.showComplexDiv = true; showModal(); },
+            openDelete: async () => { const row = mainGrid.obj?.rows({ selected: true }).data()[0]; if (!row) return; state.deleteMode = true; state.mainTitle = 'Delete Positive Adjustment?'; state.id = row.id ?? ''; state.number = row.number ?? ''; state.adjustmentDate = row.adjustmentDate ? new Date(row.adjustmentDate) : null; state.description = row.description ?? ''; state.status = String(row.status ?? ''); await methods.populateSecondaryData(row.id); secondaryGrid.refresh(); state.showComplexDiv = false; showModal(); },
+            exportExcel: () => { mainGrid.obj?.button(0).trigger(); },
+            handleSubmit: async function () {
+                try {
+                    state.isSubmitting = true; await new Promise(r => setTimeout(r, 300));
+                    if (!validateForm()) return;
+                    const response = state.id === '' ? await services.createMainData(state.adjustmentDate, state.description, state.status, StorageManager.getUserId()) : state.deleteMode ? await services.deleteMainData(state.id, StorageManager.getUserId()) : await services.updateMainData(state.id, state.adjustmentDate, state.description, state.status, StorageManager.getUserId());
+                    if (response.data.code === 200) {
+                        await methods.populateMainData(); mainGrid.refresh();
+                        if (!state.deleteMode) { state.mainTitle = 'Edit Positive Adjustment'; state.id = response?.data?.content?.data.id ?? ''; state.number = response?.data?.content?.data.number ?? ''; await methods.populateSecondaryData(state.id); secondaryGrid.refresh(); state.showComplexDiv = true; Swal.fire({ icon: 'success', title: 'Save Successful', timer: 2000, showConfirmButton: false }); }
+                        else { Swal.fire({ icon: 'success', title: 'Delete Successful', text: 'Form will be closed...', timer: 2000, showConfirmButton: false }); setTimeout(() => { hideModal(); resetFormState(); }, 2000); }
+                    } else { Swal.fire({ icon: 'error', title: state.deleteMode ? 'Delete Failed' : 'Save Failed', text: response.data.message ?? 'Please check your data.', confirmButtonText: 'Try Again' }); }
+                } catch (e) { Swal.fire({ icon: 'error', title: 'An Error Occurred', text: e.response?.data?.message ?? 'Please try again.', confirmButtonText: 'OK' }); }
+                finally { state.isSubmitting = false; }
+            },
+            openAddItem: () => { state.itemDeleteMode = false; state.itemTitle = 'Add Item'; resetItemFormState(); showItemModal(); },
+            openEditItem: () => { const row = secondaryGrid.obj?.rows({ selected: true }).data()[0]; if (!row) return; state.itemDeleteMode = false; state.itemTitle = 'Edit Item'; state.itemId = row.id ?? ''; state.itemWarehouseId = row.warehouseId ?? null; state.itemProductId = row.productId ?? null; state.itemMovement = row.movement ?? 0; showItemModal(); },
+            openDeleteItem: () => { const row = secondaryGrid.obj?.rows({ selected: true }).data()[0]; if (!row) return; state.itemDeleteMode = true; state.itemTitle = 'Delete Item?'; state.itemId = row.id ?? ''; state.itemWarehouseId = row.warehouseId ?? null; state.itemProductId = row.productId ?? null; state.itemMovement = row.movement ?? 0; showItemModal(); },
+            handleItemSubmit: async function () {
+                try {
+                    state.isItemSubmitting = true; await new Promise(r => setTimeout(r, 200));
+                    if (!state.itemDeleteMode) { if (!state.itemWarehouseId) { state.errors.itemWarehouseId = 'Warehouse is required.'; return; } if (!state.itemProductId) { state.errors.itemProductId = 'Product is required.'; return; } if (!(state.itemMovement > 0)) { state.errors.itemMovement = 'Movement must be greater than zero.'; return; } }
+                    const response = state.itemId === '' ? await services.createSecondaryData(state.id, state.itemWarehouseId, state.itemProductId, state.itemMovement, StorageManager.getUserId()) : state.itemDeleteMode ? await services.deleteSecondaryData(state.itemId, StorageManager.getUserId()) : await services.updateSecondaryData(state.itemId, state.itemWarehouseId, state.itemProductId, state.itemMovement, StorageManager.getUserId());
+                    if (response.data.code === 200) { await methods.populateSecondaryData(state.id); secondaryGrid.refresh(); Swal.fire({ icon: 'success', title: state.itemDeleteMode ? 'Delete Successful' : 'Save Successful', timer: 2000, showConfirmButton: false }); setTimeout(() => { hideItemModal(); if (state.itemDeleteMode) resetItemFormState(); }, 2000); }
+                    else { Swal.fire({ icon: 'error', title: 'Failed', text: response.data.message ?? 'Please check your data.', confirmButtonText: 'Try Again' }); }
+                } catch (e) { Swal.fire({ icon: 'error', title: 'An Error Occurred', text: e.response?.data?.message ?? 'Please try again.', confirmButtonText: 'OK' }); }
+                finally { state.isItemSubmitting = false; }
+            },
+        };
+
+        Vue.onMounted(async () => {
+            try {
+                await SecurityManager.authorizePage(['PositiveAdjustments']); await SecurityManager.validateToken();
+                await methods.populateMainData(); mainGrid.create(state.mainData);
+                mainModal.create(); mainModalRef.value?.addEventListener('hidden.bs.modal', methods.onMainModalHidden);
+                await methods.populatePositiveAdjustmentStatusListLookupData(); positiveAdjustmentStatusListLookup.create();
+                adjustmentDatePicker.create(); numberText.create();
+                await methods.populateProductListLookupData();
+                await methods.populateWarehouseListLookupData();
+                itemWarehouseListLookup.create(); itemProductListLookup.create();
+                secondaryGrid.create([]);
+            } catch (e) { console.error('page init error:', e); }
+        });
+
+        Vue.onUnmounted(() => { mainModalRef.value?.removeEventListener('hidden.bs.modal', methods.onMainModalHidden); if (mainGrid.obj) mainGrid.obj.destroy(); if (secondaryGrid.obj) secondaryGrid.obj.destroy(); });
+
+        const mainGrid = {
+            obj: null,
+            create: (dataSource) => {
+                mainGrid.obj = new DataTable('#mainGrid', {
+                    data: dataSource,
+                    columns: [
+                        { data: 'number', title: 'Number' },
+                        { data: 'adjustmentDate', title: 'Adjustment Date', render: d => d ? new Date(d).toLocaleDateString('en-GB') : '' },
+                        { data: 'statusName', title: 'Status' },
+                        { data: 'createdAtUtc', title: 'Created At', render: d => d ? new Date(d).toLocaleDateString('en-GB') : '' },
+                    ],
+                    order: [[3, 'desc']], pageLength: 50, lengthMenu: [[10, 25, 50, 100, -1], ['10', '25', '50', '100', 'All']],
+                    select: { style: 'single', info: false },
+                    buttons: [{ extend: 'excelHtml5', title: 'Positive Adjustments', exportOptions: { columns: ':visible' } }],
+                    layout: { topStart: null, topEnd: { search: { placeholder: 'Search...' } }, bottomStart: 'info', bottomEnd: 'paging' }
+                });
+                mainGrid.obj.on('select deselect', () => { state.hasSelection = mainGrid.obj.rows({ selected: true }).count() > 0; });
+            },
+            refresh: () => { mainGrid.obj.clear().rows.add(state.mainData).draw(); },
+        };
+
+        const secondaryGrid = {
+            obj: null,
+            create: (dataSource) => {
+                secondaryGrid.obj = new DataTable('#secondaryGrid', {
+                    data: dataSource,
+                    columns: [
+                        { data: 'warehouseId', title: 'Warehouse', render: d => { const w = state.warehouseListLookupData.find(x => x.id === d); return w ? w.name : (d ?? ''); } },
+                        { data: 'productId', title: 'Product', render: d => { const p = state.productListLookupData.find(x => x.id === d); return p ? p.numberName : (d ?? ''); } },
+                        { data: 'movement', title: 'Movement', className: 'text-end', render: d => d != null ? Number(d).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '' },
+                    ],
+                    order: [[0, 'asc']], paging: false,
+                    select: { style: 'single', info: false },
+                    layout: { topStart: null, topEnd: null, bottomStart: null, bottomEnd: null }
+                });
+                secondaryGrid.obj.on('select deselect', () => { state.hasItemSelection = secondaryGrid.obj.rows({ selected: true }).count() > 0; });
+            },
+            refresh: () => { secondaryGrid.obj.clear().rows.add(state.secondaryData).draw(); },
+        };
+
+        return { mainModalRef, itemModalRef, adjustmentDateRef, statusRef, numberRef, itemWarehouseIdRef, itemProductIdRef, state, handler };
+    }
+};
+
+Vue.createApp(App).mount('#app');

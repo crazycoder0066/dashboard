@@ -1,0 +1,132 @@
+<!-- Tabler JS (includes Bootstrap 5) -->
+<script src="https://cdn.jsdelivr.net/npm/@@tabler/core@@latest/dist/js/tabler.min.js"></script>
+
+<!-- Ensure window.bootstrap is available for modal/dropdown API -->
+<script src="~/lib/bootstrap/dist/js/bootstrap.min.js"></script>
+
+<!-- DataTables 2.x bundle (Bootstrap 5 + Select + Buttons + JSZip + jQuery) -->
+<script src="https://cdn.datatables.net/v/bs5/jszip-3.10.1/jq-3.7.0/dt-2.0.8/b-3.0.2/b-html5-3.0.2/sl-2.0.5/datatables.min.js"></script>
+
+<!-- JavaScript Libraries -->
+<script src="~/lib/axios/axios.min.js"></script>
+<script src="~/lib/sweetalert/sweetalert2v11.js"></script>
+<script src="~/lib/dropzone/dropzone.min.js"></script>
+<script src="~/lib/indotalent/storage-manager.js"></script>
+<script src="~/lib/indotalent/security-manager.js"></script>
+<script src="~/lib/indotalent/axios-manager.js"></script>
+<script src="~/lib/indotalent/number-format-manager.js"></script>
+<script src="~/lib/indotalent/date-format-manager.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+<script>
+    // Dark mode toggle
+    (function () {
+        function applyTheme(theme) {
+            document.documentElement.setAttribute('data-bs-theme', theme);
+            localStorage.setItem('theme', theme);
+            const icon = document.getElementById('darkModeIcon');
+            if (icon) {
+                icon.className = theme === 'dark' ? 'ti ti-sun fs-3' : 'ti ti-moon fs-3';
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', function () {
+            applyTheme(localStorage.getItem('theme') || 'light');
+
+            const toggle = document.getElementById('darkModeToggle');
+            if (toggle) {
+                toggle.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    const current = document.documentElement.getAttribute('data-bs-theme') || 'light';
+                    applyTheme(current === 'dark' ? 'light' : 'dark');
+                });
+            }
+        });
+    })();
+
+    var hideSpinnerAndShowContent = () => {
+        const spinner = document.getElementById('spinner');
+        if (spinner) {
+            spinner.classList.remove('show');
+        }
+    }
+
+    window.addEventListener('load', function () {
+        var formcard = document.getElementById('formcard');
+        if (formcard) {
+            var formcardPosition = sessionStorage.getItem('formcardPosition');
+            if (formcardPosition !== null) {
+                setTimeout(function () {
+                    formcard.scrollTop = parseInt(formcardPosition);
+                    sessionStorage.removeItem('formcardPosition');
+                }, 1000);
+            }
+        } else {
+            sessionStorage.setItem('formcardPosition', 0);
+        }
+    });
+
+    window.addEventListener('beforeunload', () => {
+        var formcard = document.getElementById('formcard');
+        if (formcard) {
+            sessionStorage.setItem('formcardPosition', formcard.scrollTop);
+        }
+    });
+</script>
+
+<script>
+    // Maintain sidebar scroll position across page navigations
+    document.addEventListener('DOMContentLoaded', function () {
+        var sidebar = document.getElementById('navbarnav');
+        if (sidebar) {
+            var scrollPosition = sessionStorage.getItem('sidebarScrollPosition');
+            if (scrollPosition !== null) {
+                setTimeout(() => {
+                    sidebar.scrollTop = parseInt(scrollPosition);
+                    sessionStorage.removeItem('sidebarScrollPosition');
+                }, 0);
+            }
+
+            sidebar.addEventListener('scroll', function () {
+                sessionStorage.setItem('sidebarScrollPosition', sidebar.scrollTop);
+            });
+        }
+    });
+
+    window.addEventListener('beforeunload', () => {
+        var sidebar = document.getElementById('navbarnav');
+        if (sidebar) {
+            sessionStorage.setItem('sidebarScrollPosition', sidebar.scrollTop);
+        }
+    });
+</script>
+
+<script>
+    function showStatusMessage(statusMessage) {
+        if (statusMessage && statusMessage.includes("Error")) {
+            new ej.notifications.Toast({
+                content: statusMessage,
+                cssClass: "e-toast-danger",
+                icon: 'e-error toast-icons',
+                position: { X: "Left", Y: "Top" }
+            }, '#Toast').show();
+        } else {
+            new ej.notifications.Toast({
+                content: statusMessage,
+                cssClass: "e-toast-success",
+                icon: 'e-success toast-icons',
+                position: { X: "Left", Y: "Top" }
+            }, '#Toast').show();
+        }
+    }
+</script>
+
+<script>
+    function formatNumberToN2(number) {
+        return Number(number).toLocaleString(undefined, {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        });
+    }
+</script>
